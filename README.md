@@ -1,5 +1,7 @@
 # Versioned Proximity Search Lab
 
+[![ci](https://github.com/estelledc/system-design-16-proximity-service/actions/workflows/ci.yml/badge.svg)](https://github.com/estelledc/system-design-16-proximity-service/actions/workflows/ci.yml)
+
 This clean-room system-design practice begins with one question: when places move, close, or change while users paginate nearby
 results, how can a bounded spatial index avoid missing in-radius places and keep one search session stable?
 
@@ -45,6 +47,9 @@ npm run benchmark:postgres
 
 Those three commands reset the configured lab tables. Do not point them at shared or production data. Public CI executes the full
 suite on Node.js 22, 24, and 26 against the pinned PostGIS image.
+
+The verified implementation receipt and bounded benchmark observations are in
+[docs/verification.md](docs/verification.md#public-receipts).
 
 ## Evidence boundary
 

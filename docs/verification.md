@@ -61,6 +61,43 @@ autoscaling, and multi-region behavior. There is no pass/fail throughput thresho
 
 ## Public receipts
 
-Exact implementation commit, workflow run, per-runtime counts, benchmark observations, and final documentation commit are recorded
-after the public CI run. Until that receipt is present and green, the database/process claims in this document are requirements,
-not completed evidence.
+The public repository is
+[`estelledc/system-design-16-proximity-service`](https://github.com/estelledc/system-design-16-proximity-service), MIT licensed on
+`main`.
+
+### Implementation and privacy-hardening runs
+
+1. Commit [`1b2ebab7ca6bac7a747317e9b585fe503f8347df`](https://github.com/estelledc/system-design-16-proximity-service/commit/1b2ebab7ca6bac7a747317e9b585fe503f8347df)
+   first ran the full executable slice in public CI
+   [run 32182251994](https://github.com/estelledc/system-design-16-proximity-service/actions/runs/32182251994). All three jobs
+   passed. Log review then found that the intentionally raced unique constraint made PostgreSQL's own service log print the
+   synthetic owner fingerprint and request key. The application process scan was clean, but that database-log path was still a
+   privacy defect worth removing.
+2. Commit [`01e6aa2cda524e56cc2b3b2bb8eb121bd5dac18c`](https://github.com/estelledc/system-design-16-proximity-service/commit/01e6aa2cda524e56cc2b3b2bb8eb121bd5dac18c)
+   added pre-snapshot same-key advisory locking. Public CI
+   [run 32182481047](https://github.com/estelledc/system-design-16-proximity-service/actions/runs/32182481047) passed all three
+   jobs, and a full-log search found neither the prior duplicate-key message nor the synthetic concurrent-search key.
+
+The hardening run used PostgreSQL `17.11` and PostGIS `3.5.7`. Each Node job reported:
+
+- repository policy check: 37 files and local Markdown links checked;
+- pure tests: 13 passed, 0 failed, 0 skipped;
+- real PostGIS tests: 10 passed, 0 failed, 0 skipped;
+- npm audit: 0 known vulnerabilities at the configured high-severity threshold;
+- process smoke: `SIGKILL`, same-session response-loss recovery, frozen old page, revision-5 current search, exact expected table
+  counts, 0 application-log leak matches, and 0 client/map/visit/human-outcome claims.
+
+### Bounded benchmark observations
+
+All observations come from run `32182481047` and the exact 50,000-row/200-session fixture above. They are not thresholds or
+capacity claims.
+
+| Runtime | Seed ms | Sessions/s | p50 ms | p95 ms | Max ms | Materialized rows | Max/session |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Node 22.23.2 | 2,714.479 | 180.469 | 5.318 | 6.344 | 24.828 | 2,420 | 19 |
+| Node 24.19.0 | 2,674.955 | 196.593 | 4.884 | 5.795 | 24.258 | 2,420 | 19 |
+| Node 26.7.0 | 2,676.278 | 189.660 | 5.091 | 6.030 | 24.471 | 2,420 | 19 |
+
+The historical closed-book contract named PostgreSQL 17.6 before execution. The pinned moving image tag resolved to 17.11 during
+these runs; this verification record reports the observed patch version rather than silently preserving the estimate. Reproducible
+image-digest pinning remains an operations gap even though the major/PostGIS family gate passed.
