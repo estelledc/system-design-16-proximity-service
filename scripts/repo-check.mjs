@@ -83,7 +83,14 @@ assert.match(schema, /USING gist \(location\)/);
 const sessionBlock = schema.slice(schema.indexOf('CREATE TABLE IF NOT EXISTS search_sessions'), schema.indexOf('CREATE TABLE IF NOT EXISTS search_session_results'));
 assert.equal(/latitude|longitude/.test(sessionBlock), false, 'search session metadata must not store raw query coordinates');
 const repository = await readFile(new URL('src/repository.js', root), 'utf8');
-for (const contract of ['ST_DWithin', 'ST_Distance', 'REPEATABLE READ', 'LIMIT 501', 'ORDER BY distance_mm ASC, p.place_id ASC']) {
+for (const contract of [
+  'ST_DWithin',
+  'ST_Distance',
+  'REPEATABLE READ',
+  'pg_advisory_lock',
+  'LIMIT 501',
+  'ORDER BY distance_mm ASC, p.place_id ASC',
+]) {
   assert.ok(repository.includes(contract), `missing repository contract: ${contract}`);
 }
 

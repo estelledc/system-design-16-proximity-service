@@ -16,7 +16,7 @@ operator access are assumed external and therefore unproved.
 | malformed/ambiguous coordinates | finite named numbers, closed range, `+180 -> -180`, point order tested | no accuracy/uncertainty model |
 | oversized parser/search work | 16 KiB body, field allowlist, bounded radius/page/token, statement timeout, 501 gate | internal spatial work is not strictly counted |
 | lost update | exact strong ETag checked under catalog/place locks | global lock limits throughput |
-| idempotency-key substitution | owner-scoped key plus canonical SHA-256 intent digest; changed intent conflicts | digest is not encryption and has retention risk |
+| idempotency-key substitution | owner-scoped key plus canonical SHA-256 intent digest; same-key search is advisory-locked before its snapshot; changed intent conflicts | digest is not encryption and has retention risk |
 | page-token forgery or swapping | HMAC-SHA-256, canonical payload, timing-safe signature, owner/session/ordinal/expiry checks | one unversioned active key; no revocation |
 | cross-owner object access | every place/session lookup includes owner fingerprint | bearer issuance and authorization policy absent |
 | stale cache/index leak | no second cache/index authority; location/details/lifecycle share one current row | no distributed read model/failover proof |
@@ -28,7 +28,8 @@ operator access are assumed external and therefore unproved.
 ## Privacy boundaries
 
 - Owner fingerprints are keyed pseudonyms, not anonymity. Compromise of the auth HMAC key enables stable-token dictionary checks.
-- Search sessions omit raw query coordinates but store a plain intent digest and copied result locations/identities. A small query
+- Search sessions omit raw query coordinates but store a plain intent digest and copied result locations/identities. Advisory lock
+  inputs also reach PostgreSQL transiently but avoid the expected unique-violation log path. A small query
   domain may be guessed, and result copies remain sensitive.
 - Place version history is append-only in v0.1. That conflicts with an unimplemented real-world erasure/retention policy.
 - Exact locations are returned to an authenticated caller without purpose limitation, consent, field-level authorization, rate

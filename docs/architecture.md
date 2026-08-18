@@ -48,8 +48,11 @@ The initial request runs in PostgreSQL Repeatable Read:
 5. rank with rounded millimeter `ST_Distance`, then UUID, and request 501 rows;
 6. reject 501 rows, otherwise persist the session plus every result copy and commit.
 
-A concurrent same-key insert is reconciled through the named unique constraint. A PostgreSQL `40001` serialization failure gets one
-bounded transaction retry, as required by Repeatable Read callers. No HTTP page holds a database snapshot open.
+Before opening the Repeatable Read transaction, the connection takes a session-level advisory lock derived from owner plus request
+key. That lock does not establish a transaction snapshot; a waiting exact retry therefore begins after the winner commits and sees
+its session without an expected unique-constraint error exposing the key in database error logs. PostgreSQL releases the lock if
+the connection/process dies. The named unique constraint remains a final integrity backstop, and a PostgreSQL `40001`
+serialization failure gets one bounded transaction retry. No HTTP page holds a database snapshot open.
 
 ## Pagination state
 

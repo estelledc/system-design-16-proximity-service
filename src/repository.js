@@ -296,11 +296,18 @@ export class ProximityRepository {
 
   async #createSearchAttempt({ owner, requestKey, digest, query }) {
     const client = await this.pool.connect();
+    const advisoryKey = `${owner}:${requestKey}`;
+    let transactionOpen = false;
+    let advisoryLockHeld = false;
     try {
+      await client.query(`SELECT pg_advisory_lock(hashtextextended($1, 0))`, [advisoryKey]);
+      advisoryLockHeld = true;
       await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      transactionOpen = true;
       const existing = await this.#existingSession(client, owner, requestKey, digest);
       if (existing) {
         await client.query('COMMIT');
+        transactionOpen = false;
         return existing;
       }
       const revisionResult = await client.query(
@@ -353,14 +360,22 @@ export class ProximityRepository {
         `, values);
       }
       await client.query('COMMIT');
+      transactionOpen = false;
       return {
         sessionId, snapshotRevision, pageSize: query.pageSize,
         resultCount: matches.rowCount, createdAt: now, expiresAt, replayed: false,
       };
     } catch (error) {
-      await rollback(client);
+      if (transactionOpen) await rollback(client);
       throw error;
     } finally {
+      if (advisoryLockHeld) {
+        const unlocked = await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked`, [advisoryKey]);
+        if (unlocked.rows[0].unlocked !== true) {
+          client.release(new Error('search advisory lock ownership was lost'));
+          throw new Error('search advisory lock ownership was lost');
+        }
+      }
       client.release();
     }
   }
