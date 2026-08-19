@@ -65,15 +65,19 @@ The public repository is
 [`estelledc/system-design-16-proximity-service`](https://github.com/estelledc/system-design-16-proximity-service), MIT licensed on
 `main`.
 
+The identity-safe rewrite preserved every existing tree, message, and timestamp while mapping the five commits in order: `b0a10382a5da773b5651d6459236b6c6e59ea8d1` → `5bdf56dafbe509cc9de306c2bd4719e35fe8cbf9`, `79ca1bdf857ff1d194222c8364f721f069705862` → `914485ca84221eca25d8e57a56455dc6bfca395a`, `1b2ebab7ca6bac7a747317e9b585fe503f8347df` → `d3286ed386f23720e062e277b0454c6b4ce225df`, `01e6aa2cda524e56cc2b3b2bb8eb121bd5dac18c` → `e9831cf3e88d85ff7220be833175493a888cfcc8`, and `44a3d6cf128d9db39568e5462ef5d556e804edcd` → `aea7fe9a363b77bf2718fecc64824996cc1ad9f6`. The older runs below remain bound to their pre-rewrite commit objects.
+
+Current reachable `main` uses the repository owner's GitHub noreply identity. Rewritten baseline `aea7fe9a363b77bf2718fecc64824996cc1ad9f6` passed [CI run 32226453535](https://github.com/estelledc/system-design-16-proximity-service/actions/runs/32226453535) on Node 22, 24, and 26 with PostgreSQL 17 / PostGIS 3.5 and the full quality gate.
+
 ### Implementation and privacy-hardening runs
 
-1. Commit [`1b2ebab7ca6bac7a747317e9b585fe503f8347df`](https://github.com/estelledc/system-design-16-proximity-service/commit/1b2ebab7ca6bac7a747317e9b585fe503f8347df)
+1. Tree-equivalent commit [`d3286ed386f23720e062e277b0454c6b4ce225df`](https://github.com/estelledc/system-design-16-proximity-service/commit/d3286ed386f23720e062e277b0454c6b4ce225df)
    first ran the full executable slice in public CI
    [run 32182251994](https://github.com/estelledc/system-design-16-proximity-service/actions/runs/32182251994). All three jobs
    passed. Log review then found that the intentionally raced unique constraint made PostgreSQL's own service log print the
    synthetic owner fingerprint and request key. The application process scan was clean, but that database-log path was still a
    privacy defect worth removing.
-2. Commit [`01e6aa2cda524e56cc2b3b2bb8eb121bd5dac18c`](https://github.com/estelledc/system-design-16-proximity-service/commit/01e6aa2cda524e56cc2b3b2bb8eb121bd5dac18c)
+2. Tree-equivalent commit [`e9831cf3e88d85ff7220be833175493a888cfcc8`](https://github.com/estelledc/system-design-16-proximity-service/commit/e9831cf3e88d85ff7220be833175493a888cfcc8)
    added pre-snapshot same-key advisory locking. Public CI
    [run 32182481047](https://github.com/estelledc/system-design-16-proximity-service/actions/runs/32182481047) passed all three
    jobs, and a full-log search found neither the prior duplicate-key message nor the synthetic concurrent-search key.
